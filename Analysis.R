@@ -28,7 +28,7 @@ pbp_2019 = pbp_2019 %>% mutate(year = format(as.Date(game_date, format="%Y-%m-%d
 
 ## Part III: Exploratory Analysis ##
 
-# In this section, I analyze the Saint's offense for the 2019 season. I provide some general statistics on overall offensive performance**
+# In this section, I analyze the Saint's offense for the 2019 season. I provide some general statistics on overall offensive performance 
 
 # Points scored
 pbp_2019 %>% filter(posteam == 'NO') %>% group_by(defteam, game_date) %>% summarise(points_scored = max(posteam_score, na.rm = T), won = ifelse(sum(win) > 1, 1,0)) %>% ggplot(aes(x = game_date, y = points_scored, label = defteam)) + geom_line(linetype = 2) + ggtitle("Points Scored") + xlab('') + ylab('Points') + geom_label(aes(fill = factor(won)), colour = "white", fontface = "bold") + scale_fill_manual(name = 'Outcome', values = c("red", "green"),labels = c("Lost", "Won")) + theme_bw() + theme(text=element_text(size=12,  family="Comic Sans MS"))
@@ -36,13 +36,11 @@ pbp_2019 %>% filter(posteam == 'NO') %>% group_by(defteam, game_date) %>% summar
 # Percent of scoring drives: td vs. field goal
 pbp_2019 %>% filter(posteam == 'NO') %>% group_by(defteam, game_date) %>% summarise(drives = length(unique(drive)), td = ((sum(play_type == 'extra_point') + sum(!is.na(two_point_conv_result)))/drives)*100, field_goal = (sum(play_type == 'field_goal')/drives)*100) %>% gather(key = "result", value = "proportion", td, field_goal) %>% arrange(game_date) %>% ggplot(aes(x = game_date, y = proportion, color = result)) + geom_smooth(method = 'loess', se = F) + ggtitle("Percent of Drives Resulting in TD vs. FG") + xlab('') + ylab('%') + theme_bw() + theme(text=element_text(size=12,  family="Comic Sans MS"))
 
-
 # Drives: Run vs. Pass (Entire Season)
 pbp_2019 %>% filter((play_type == 'run' | play_type == 'pass' ) & posteam == 'NO' & is.na(two_point_conv_result)) %>% summarise(run = round((sum(play_type == 'run')/n())*100,1), pass = round((sum(play_type == 'pass')/n())*100,1)) %>% gather("play_type", "proportion", run, pass) %>% ggplot(aes(x = play_type, y = proportion)) + geom_col(fill = "tomato1") + ggtitle('Run vs. Pass') + theme_bw() + theme(text=element_text(size=12,  family="Comic Sans MS")) + ylab("%")
 
 # Average pass WPA rankings in 2019 
 pbp_2019 %>% filter(play_type == "pass" | (play_type == "no_play" & interception == 1) | (play_type == "no_play" & incomplete_pass == 1) | (play_type == "no_play" & str_detect(desc, "Grounding"))) %>% group_by(posteam) %>% summarise(avg_wpa = round(mean(wpa, na.rm = T), 4)*100, attempts = n()) %>% arrange(desc(avg_wpa)) %>% ggplot(aes(x = reorder(posteam, avg_wpa), y = avg_wpa, fill = attempts)) + geom_col() + coord_flip() + labs(title = "2019 Pass Rankings") + xlab("Team") + theme(legend.position = "none") + ylab("Avg. WPA per Pass (%)") + theme_bw() + theme(text=element_text(size=12, family="Comic Sans MS")) + scale_fill_gradient(low = "tomato1", high = "green", name = "Pass Attempts")
-
 
 # Pass attempt proportion and avg wpa for qbs (short: up to 15 air yards)
 pbp_2019 %>% filter(play_type == "pass" | (play_type == "no_play" & interception == 1) | (play_type == "no_play" & incomplete_pass == 1) | (play_type == "no_play" & str_detect(desc, "Grounding"))) %>% mutate(passer_player_name = ifelse(passer_player_name == "D.Brees" | passer_player_name == "T.Bridgewater", passer_player_name, "League Average")) %>% group_by(passer_player_name, pass_length) %>% summarise(total_wpa = sum(wpa, na.rm = T), avg_wpa = round(mean(wpa, na.rm = T),3)*100, attempts = n()) %>% group_by(passer_player_name) %>% filter(!is.na(pass_length)) %>% mutate(pass_proportion = (attempts/sum(attempts))*100) %>% arrange(desc(avg_wpa)) %>% filter(attempts >= 5) %>% ggplot(aes(x = pass_length, y = passer_player_name, color = avg_wpa, size = pass_proportion)) + geom_point() + scale_color_gradient(low = "tomato1", high = "green") + xlab("Distance") + ylab("") + labs(color = "Avg. WPA per Pass (%)") + labs(size = "Proportion of Passes (%)") + labs(title = "Pass by Distance", subtitle = "Min. 10 Pass Attempts") + theme_bw() + theme(text=element_text(size=11, family="Comic Sans MS"))
